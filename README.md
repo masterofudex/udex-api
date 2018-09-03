@@ -36,7 +36,7 @@ Unless the spec defines otherwise, errors to bad requests should respond with HT
 - All requests and responses should be of **application/json** content type
 - All addresses are sent as lower-case (non-checksummed) Ethereum addresses with the `0x` prefix.
 
-## PUBLIC REST API
+## Public REST API
 
 ### GET /v0/markets
 
@@ -154,9 +154,9 @@ Retrieves the orderbook for a given token pair.
 
 Bids will be sorted in descending order by price, and asks will be sorted in ascending order by price. Within the price sorted orders, the orders are further sorted first by total fees, then by expiration in ascending order.
 
-## PRIVATE REST API
+## Private REST API
 
-###  POST /vo/auth
+###  POST /v0/auth
 
 Before you can get your own open order list or cancel an order, you need to get authentication token.
 
@@ -213,6 +213,10 @@ async verify() {
 
 Retrieves a list of orders given query parameters. This endpoint should be paginated. For querying an entire orderbook snapshot, the [orderbook endpoint](#get-v0orderbook) is recommended.
 
+#### Headers
+- `Content-Type` - application/json
+- `Authorization` - authentication token 
+
 #### Parameters
 
 * pair [string]: returns orders created for this exchange address
@@ -260,6 +264,10 @@ Returns HTTP 400 if no pair was found.
 ### GET /v0/openOrders
 
 Retrieves a list of orders given query parameters. This endpoint should be paginated. For querying an entire orderbook snapshot, the [orderbook endpoint](#get-v0orderbook) is recommended.
+
+#### Headers
+- `Content-Type` - application/json
+- `Authorization` - authentication token 
 
 #### Parameters
 
@@ -380,13 +388,16 @@ Validation error codes:
 
 Delete an order by orderHash.
 
+#### Headers
+- `Content-Type` - application/json
+- `Authorization` - authentication token 
+
 #### Parameters
 
 * orderHash [string]: The hash result of order you wish to cancel.
 
-###### Success Response
+###### Response
 
 Returns HTTP 200 upon success.
 
-###### Error Response
 
