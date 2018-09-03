@@ -24,6 +24,7 @@ Unless the spec defines otherwise, errors to bad requests should respond with HT
 | Code | Reason
 | ---- | --------------------------------------- |
 | 400  | Bad Request – Invalid request format    |
+| 401  | Unauthorized – Unauthorized request     |
 | 404  | Not found                               |
 | 429  | Too many requests - Rate limit exceeded |
 | 500  | Internal Server Error                   |
@@ -65,91 +66,62 @@ Retrieves a list of available token pairs and the information required to trade 
 ....
 ```
 
-- `address` - address of the token
-- `minAmount` - the minimum trade amount the relayer will accept
-- `maxAmount` - the maximum trade amount the relayer will accept
-- `precision` - the desired price precision a relayer would like to support within their orderbook
+- `marketId` - symbol of the token
+- `baseToken` - the base token address of the market
+- `tradeToken` - the trade token address of the market
+- `price24h` - the price 24 hours ago of the market
+- `price` - current price of the market
+- `miniAmount` - mini amount of the market
+- `fee` - fee of the market
 
-### GET /v0/orders
+### GET /v0/orderHistory
 
 Retrieves a list of orders given query parameters. This endpoint should be paginated. For querying an entire orderbook snapshot, the [orderbook endpoint](#get-v0orderbook) is recommended.
 
 #### Parameters
 
-* exchangeContractAddress [string]: returns orders created for this exchange address
+* pair [string]: returns orders created for this exchange address
 * tokenAddress [string]: returns orders where makerTokenAddress or takerTokenAddress is token address
 * makerTokenAddress [string]: returns orders with specified makerTokenAddress
-* takerTokenAddress [string]: returns orders with specified makerTokenAddress
-* maker [string]: returns orders where maker is maker address
-* taker [string]: returns orders where taker is taker address
-* trader [string]: returns orders where maker or taker is trader address
-* feeRecipient [string]: returns orders where feeRecipient is feeRecipient address
 
-All parameters are optional.
-
-If both makerTokenAddress and takerTokenAddress are specified, returned orders will be sorted by price determined by (takerTokenAmount/makerTokenAmount) in ascending order. By default, orders returned by this endpoint are unsorted.
+Returns HTTP 400 if no pair was found.
 
 #### Response
 
-[See response schema](https://github.com/0xProject/0x.js/blob/v1-protocol/packages/json-schemas/schemas/signed_orders_schema.ts#L1)
-
 ```
 [
-    {
-        "exchangeContractAddress": "0x12459c951127e0c374ff9105dda097662a027093",
-        "maker": "0x9e56625509c2f60af937f23b7b532600390e8c8b",
-        "taker": "0xa2b31dacf30a9c50ca473337c01d8a201ae33e32",
-        "makerTokenAddress": "0x323b5d4c32345ced77393b3530b1eed0f346429d",
-        "takerTokenAddress": "0xef7fff64389b814a946f3e92105513705ca6b990",
-        "feeRecipient": "0xb046140686d052fff581f63f8136cce132e857da",
-        "makerTokenAmount": "10000000000000000",
-        "takerTokenAmount": "20000000000000000",
-        "makerFee": "100000000000000",
-        "takerFee": "200000000000000",
-        "expirationUnixTimestampSec": "42",
-        "salt": "67006738228878699843088602623665307406148487219438534730168799356281242528500",
-        "ecSignature": {
-            "v": 27,
-            "r": "0x61a3ed31b43c8780e905a260a35faefcc527be7516aa11c0256729b5b351bc33",
-            "s": "0x40349190569279751135161d22529dc25add4f6069af05be04cacbda2ace2254"
-        }
-    },
+	{
+		"id": 1,
+		"maker": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
+		"taker": "0x0000000000000000000000000000000000000000",
+		"makerTokenAddress": "0xc778417e063141139fce010982780140aa0cd5ab",
+		"takerTokenAddress": "0xa8e9fa8f91e5ae138c74648c9c304f1c75003a8d",
+		"feeRecipient": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
+		"exchangeContractAddress": "0x479cc461fecd078f766ecc58533d6f69580cf3ac",
+		"salt": "55830723742902371711551913246819251315650256325984569206718629062992028427256",
+		"makerTokenAmount": "4180747000000",
+		"takerTokenAmount": "3480475000000000",
+		"makerFee": "0",
+		"takerFee": "0",
+		"expirationUnixTimestampSec": 1535963543,
+		"takerTokenAmountFilled": "3480475000000000",
+		"takerTokenAmountCancelled": "0",
+		"status": "filled",
+		"makerTokenRemaining": "0",
+		"takerTokenRemaining": "0",
+		"makerLockedAmount": "0",
+		"takerLockedAmount": "0",
+		"price": 0.0012,
+		"pair": "ZRX-WETH",
+		"side": "buy",
+		"orderHash": "c30eb1c828671b7ba3a454a765c9eeabecd61b58f9e2280a24d4a5f0bf3c8eaa",
+		"createdTime": "2018-09-02T16:32:28.871066+08:00",
+		"updatedTime": "2018-09-02T16:32:31.883558+08:00"
+	},
     ...
 ]
 ```
 
-### GET /v0/order/[orderHash]
-
-Retrieves a specific order by orderHash.
-
-#### Response
-
-[See response schema](https://github.com/0xProject/0x.js/blob/v1-protocol/packages/json-schemas/schemas/order_schemas.ts#L24)
-
-
-```
-{
-    "exchangeContractAddress": "0x12459c951127e0c374ff9105dda097662a027093",
-    "maker": "0x9e56625509c2f60af937f23b7b532600390e8c8b",
-    "taker": "0xa2b31dacf30a9c50ca473337c01d8a201ae33e32",
-    "makerTokenAddress": "0x323b5d4c32345ced77393b3530b1eed0f346429d",
-    "takerTokenAddress": "0xef7fff64389b814a946f3e92105513705ca6b990",
-    "feeRecipient": "0xb046140686d052fff581f63f8136cce132e857da",
-    "makerTokenAmount": "10000000000000000",
-    "takerTokenAmount": "20000000000000000",
-    "makerFee": "100000000000000",
-    "takerFee": "200000000000000",
-    "expirationUnixTimestampSec": "42",
-    "salt": "67006738228878699843088602623665307406148487219438534730168799356281242528500",
-    "ecSignature": {
-        "v": 27,
-        "r": "0x61a3ed31b43c8780e905a260a35faefcc527be7516aa11c0256729b5b351bc33",
-        "s": "0x40349190569279751135161d22529dc25add4f6069af05be04cacbda2ace2254"
-    }
-}
-```
-
-Returns HTTP 404 if no order with specified orderHash was found.
 
 ### GET /v0/orderbook
 
@@ -157,59 +129,73 @@ Retrieves the orderbook for a given token pair.
 
 #### Parameters
 
-* baseTokenAddress [string]: address of token designated as the baseToken in the [currency pair calculation](https://en.wikipedia.org/wiki/Currency_pair) of price (required)
-* quoteTokenAddress [string]: address of token designated as the quoteToken in the currency pair calculation of price (required)
+* pair [string]: address of token designated as the baseToken in the [currency pair calculation](https://en.wikipedia.org/wiki/Currency_pair) of price (required)
+
 
 #### Response
 
-[See response schema](https://github.com/0xProject/0x.js/blob/v1-protocol/packages/json-schemas/schemas/relayer_api_orderbook_response_schema.ts#L1)
-
 ```
 {
-    "bids": [
-        {
-            "exchangeContractAddress": "0x12459c951127e0c374ff9105dda097662a027093",
-            "maker": "0x9e56625509c2f60af937f23b7b532600390e8c8b",
-            "taker": "0xa2b31dacf30a9c50ca473337c01d8a201ae33e32",
-            "makerTokenAddress": "0x323b5d4c32345ced77393b3530b1eed0f346429d",
-            "takerTokenAddress": "0xef7fff64389b814a946f3e92105513705ca6b990",
-            "feeRecipient": "0xb046140686d052fff581f63f8136cce132e857da",
-            "makerTokenAmount": "10000000000000000",
-            "takerTokenAmount": "20000000000000000",
-            "makerFee": "100000000000000",
-            "takerFee": "200000000000000",
-            "expirationUnixTimestampSec": "42",
-            "salt": "67006738228878699843088602623665307406148487219438534730168799356281242528500",
-            "ecSignature": {
-                "v": 27,
-                "r": "0x61a3ed31b43c8780e905a260a35faefcc527be7516aa11c0256729b5b351bc33",
-                "s": "0x40349190569279751135161d22529dc25add4f6069af05be04cacbda2ace2254"
-            }
-        },
-        ...
-    ],
-    "asks": [
-        {
-            "exchangeContractAddress": "0x12459c951127e0c374ff9105dda097662a027093",
-            "maker": "0x9e56625509c2f60af937f23b7b532600390e8c8b",
-            "taker": "0xa2b31dacf30a9c50ca473337c01d8a201ae33e32",
-            "makerTokenAddress": "0xef7fff64389b814a946f3e92105513705ca6b990",
-            "takerTokenAddress": "0x323b5d4c32345ced77393b3530b1eed0f346429d",
-            "feeRecipient": "0xb046140686d052fff581f63f8136cce132e857da",
-            "makerTokenAmount": "22000000000000000",
-            "takerTokenAmount": "10000000000000000",
-            "makerFee": "100000000000000",
-            "takerFee": "200000000000000",
-            "expirationUnixTimestampSec": "632",
-            "salt": "54515451557974875123697849345751275676157243756715784155226239582178",
-            "ecSignature": {
-                "v": 27,
-                "r": "0x61a3ed31b43c8780e905a260a35faefcc527be7516aa11c0256729b5b351bc33",
-                "s": "0x40349190569279751135161d22529dc25add4f6069af05be04cacbda2ace2254"
-            }
-        },
-        ...
-    ]
+	"bids": [{
+		"id": 452,
+		"maker": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
+		"taker": "0x0000000000000000000000000000000000000000",
+		"makerTokenAddress": "0xc778417e063141139fce010982780140aa0cd5ab",
+		"takerTokenAddress": "0xa8e9fa8f91e5ae138c74648c9c304f1c75003a8d",
+		"feeRecipient": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
+		"exchangeContractAddress": "0x479cc461fecd078f766ecc58533d6f69580cf3ac",
+		"salt": "64714771787346576693970527227544016460454079355363503584618354068699042527224",
+		"makerTokenAmount": "5729184000000",
+		"takerTokenAmount": "13921902000000000",
+		"makerFee": "0",
+		"takerFee": "0",
+		"expirationUnixTimestampSec": 1535963954,
+		"takerTokenAmountFilled": "0",
+		"takerTokenAmountCancelled": "0",
+		"status": "activity",
+		"makerTokenRemaining": "5729184000000",
+		"takerTokenRemaining": "13921902000000000",
+		"makerLockedAmount": "0",
+		"takerLockedAmount": "0",
+		"price": 0.000411112,
+		"pair": "ZRX-WETH",
+		"side": "buy",
+		"orderHash": "e441cc9e0f567d2521d6dfa1d3f12faac65ab26cebce3c5449e4cce5fa33e4b3",
+		"createdTime": "2018-09-02T16:39:17.285983+08:00",
+		"updatedTime": "2018-09-02T16:39:17.285984+08:00"
+	},
+	...
+	],
+	"asks": [{
+		"id": 436,
+		"maker": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
+		"taker": "0x0000000000000000000000000000000000000000",
+		"makerTokenAddress": "0xa8e9fa8f91e5ae138c74648c9c304f1c75003a8d",
+		"takerTokenAddress": "0xc778417e063141139fce010982780140aa0cd5ab",
+		"feeRecipient": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
+		"exchangeContractAddress": "0x479cc461fecd078f766ecc58533d6f69580cf3ac",
+		"salt": "60115282420328746583803936021604412873917235397941994748653467998912648672037",
+		"makerTokenAmount": "13921902000000000",
+		"takerTokenAmount": "18080374000000",
+		"makerFee": "0",
+		"takerFee": "0",
+		"expirationUnixTimestampSec": 1535962538,
+		"takerTokenAmountFilled": "0",
+		"takerTokenAmountCancelled": "0",
+		"status": "activity",
+		"makerTokenRemaining": "13921902000000000",
+		"takerTokenRemaining": "18080374000000",
+		"makerLockedAmount": "0",
+		"takerLockedAmount": "0",
+		"price": 0.0013,
+		"pair": "ZRX-WETH",
+		"side": "sell",
+		"orderHash": "40fedfcb41885d6f1b7ceb1c90d0d3adaa036a2b8dfb23aad0112b7c034220da",
+		"createdTime": "2018-09-02T16:15:40.891439+08:00",
+		"updatedTime": "2018-09-02T16:15:40.891441+08:00"
+	},
+	...
+	]
 }
 ```
 
@@ -218,39 +204,6 @@ Retrieves the orderbook for a given token pair.
 
 Bids will be sorted in descending order by price, and asks will be sorted in ascending order by price. Within the price sorted orders, the orders are further sorted first by total fees, then by expiration in ascending order.
 
-### POST /v0/fees
-
-Given an unsigned order without the fee-related properties, returns the required `feeRecipient`, `makerFee`, and `takerFee` of that order.
-
-#### Payload
-
-[See payload schema](https://github.com/0xProject/0x.js/blob/v1-protocol/packages/json-schemas/schemas/relayer_api_fees_payload_schema.ts#L1)
-
-```
-{
-    "exchangeContractAddress": "0x12459c951127e0c374ff9105dda097662a027093",
-    "maker": "0x9e56625509c2f60af937f23b7b532600390e8c8b",
-    "taker": "0x0000000000000000000000000000000000000000",
-    "makerTokenAddress": "0x323b5d4c32345ced77393b3530b1eed0f346429d",
-    "takerTokenAddress": "0xef7fff64389b814a946f3e92105513705ca6b990",
-    "makerTokenAmount": "10000000000000000",
-    "takerTokenAmount": "20000000000000000",
-    "expirationUnixTimestampSec": "42",
-    "salt": "67006738228878699843088602623665307406148487219438534730168799356281242528500"
-}
-```
-
-#### Response
-
-[See response schema](https://github.com/0xProject/0x.js/blob/v1-protocol/packages/json-schemas/schemas/relayer_api_fees_response_schema.ts#L1)
-
-```
-{
-    "feeRecipient": "0xb046140686d052fff581f63f8136cce132e857da",
-    "makerFee": "100000000000000",
-    "takerFee": "200000000000000"
-}
-```
 
 ### POST /v0/order
 
@@ -292,19 +245,12 @@ Returns HTTP 201 upon success.
 
 Error response will be sent with a non-2xx HTTP status code
 
-[See error response schema](https://github.com/0xProject/0x.js/blob/v1-protocol/packages/json-schemas/schemas/relayer_api_error_response_schema.ts#L1)
-
 ```
 {
-    "code": 101,
-    "reason": "Validation failed",
-    "validationErrors": [
-        {
-            "field": "maker",
-            "code": 1002,
-            "reason": "Invalid address"
-        }
-    ]
+	"error": {
+		"code": 106,
+		"reason": "Signature Verify Failed."
+	}
 }
 ```
 
