@@ -1,4 +1,4 @@
-# UDEX HTTP REST API Specification v0
+# HTTP REST API Specification v0
 
 ## Table of Contents
 
@@ -34,10 +34,9 @@ Unless the spec defines otherwise, errors to bad requests should respond with HT
 ### Misc.
 
 - All requests and responses should be of **application/json** content type
-- All token amounts are sent in amounts of the smallest level of precision (base units). (e.g if a token has 18 decimal places, selling 1 token would show up as selling `'1000000000000000000'` units by this API).
 - All addresses are sent as lower-case (non-checksummed) Ethereum addresses with the `0x` prefix.
 
-## REST API
+## PUBLIC REST API
 
 ### GET /v0/markets
 
@@ -57,7 +56,7 @@ Retrieves a list of available token pairs and the information required to trade 
 		"price24h": 0.003,
 		"price": 0.0012,
 		"tradeTokenVolume": "0",
-		"baseTokenVolume": "0",
+		"baseTokenVolume": "0.000044859458000000",
 		"decimals": 18,
 		"miniAmount": 159.3266666666667,
 		"fee": 0.001
@@ -73,55 +72,6 @@ Retrieves a list of available token pairs and the information required to trade 
 - `price` - current price of the market
 - `miniAmount` - mini amount of the market
 - `fee` - fee of the market
-
-### GET /v0/orderHistory
-
-Retrieves a list of orders given query parameters. This endpoint should be paginated. For querying an entire orderbook snapshot, the [orderbook endpoint](#get-v0orderbook) is recommended.
-
-#### Parameters
-
-* pair [string]: returns orders created for this exchange address
-* tokenAddress [string]: returns orders where makerTokenAddress or takerTokenAddress is token address
-* makerTokenAddress [string]: returns orders with specified makerTokenAddress
-
-Returns HTTP 400 if no pair was found.
-
-#### Response
-
-```
-[
-	{
-		"id": 1,
-		"maker": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
-		"taker": "0x0000000000000000000000000000000000000000",
-		"makerTokenAddress": "0xc778417e063141139fce010982780140aa0cd5ab",
-		"takerTokenAddress": "0xa8e9fa8f91e5ae138c74648c9c304f1c75003a8d",
-		"feeRecipient": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
-		"exchangeContractAddress": "0x479cc461fecd078f766ecc58533d6f69580cf3ac",
-		"salt": "55830723742902371711551913246819251315650256325984569206718629062992028427256",
-		"makerTokenAmount": "4180747000000",
-		"takerTokenAmount": "3480475000000000",
-		"makerFee": "0",
-		"takerFee": "0",
-		"expirationUnixTimestampSec": 1535963543,
-		"takerTokenAmountFilled": "3480475000000000",
-		"takerTokenAmountCancelled": "0",
-		"status": "filled",
-		"makerTokenRemaining": "0",
-		"takerTokenRemaining": "0",
-		"makerLockedAmount": "0",
-		"takerLockedAmount": "0",
-		"price": 0.0012,
-		"pair": "ZRX-WETH",
-		"side": "buy",
-		"orderHash": "c30eb1c828671b7ba3a454a765c9eeabecd61b58f9e2280a24d4a5f0bf3c8eaa",
-		"createdTime": "2018-09-02T16:32:28.871066+08:00",
-		"updatedTime": "2018-09-02T16:32:31.883558+08:00"
-	},
-    ...
-]
-```
-
 
 ### GET /v0/orderbook
 
@@ -204,6 +154,158 @@ Retrieves the orderbook for a given token pair.
 
 Bids will be sorted in descending order by price, and asks will be sorted in ascending order by price. Within the price sorted orders, the orders are further sorted first by total fees, then by expiration in ascending order.
 
+## PRIVATE REST API
+
+###  POST /vo/auth
+
+Before you can get your own open order list or cancel an order, you need to get authentication token.
+
+#### Use web3.js
+```
+async sign(address, data) {
+	const hash = this.web3.sha3(data);
+	const sig = await new Promise(function(resolve, reject) {
+		web3.eth.sign(address, hash, function(error, result) {
+			if (error) {
+				reject(error);
+			} else {
+				resolve(result);
+			}
+		})
+	});
+	return {
+		sign: sig,
+		data: hash
+	};
+}
+
+async verify() {
+	const data = "Sign this message to verify your authority of current address !";
+	const sigData = await this.sign(this.currentAddress, data);
+	const authForm = {
+		address: this.currentAddress,
+		data: sigData.data,
+		signature: sigData.sign
+	};
+	return DoPost(authForm);
+}
+```
+#### Payload
+```
+{
+	"address": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
+	"data": "0x1bf59099f1a36e1df4d8afc601951ecfd07a6cc8639bc016eb627b33eeec9198",
+	"signature": "0x20a17d52961bfff8a2348a143274711ff01c239bf955de5568015d1d3aa500ca195061f9c969e1e4723d4432be295fae4bbc5ddb32707d3088219a53996b96131c"
+}
+```
+- `address` - ethereum address for signing
+- `data` - hash result of the message
+- `signature` - signature result of data
+
+###### Response
+```
+{
+	"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1MzY1NjQ4NzYsImlzcyI6IjB4MWJiZmQ0MDA5ZGRlNzM1OTViNmZmNGFiYWM5ZGQxNDk0NDM4YWFhZSIsIm5iZiI6MTUzNTk2MDA3Nn0.OScS5DJA1N-eAer2ymhnJQl9koS2QSZbgBCOQ_0h6Fw"
+}
+```
+
+### GET /v0/orderHistory
+
+Retrieves a list of orders given query parameters. This endpoint should be paginated. For querying an entire orderbook snapshot, the [orderbook endpoint](#get-v0orderbook) is recommended.
+
+#### Parameters
+
+* pair [string]: returns orders created for this exchange address
+* tokenAddress [string]: returns orders where makerTokenAddress or takerTokenAddress is token address
+* makerTokenAddress [string]: returns orders with specified makerTokenAddress
+
+Returns HTTP 400 if no pair was found.
+
+#### Response
+
+```
+[
+	{
+		"id": 1,
+		"maker": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
+		"taker": "0x0000000000000000000000000000000000000000",
+		"makerTokenAddress": "0xc778417e063141139fce010982780140aa0cd5ab",
+		"takerTokenAddress": "0xa8e9fa8f91e5ae138c74648c9c304f1c75003a8d",
+		"feeRecipient": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
+		"exchangeContractAddress": "0x479cc461fecd078f766ecc58533d6f69580cf3ac",
+		"salt": "55830723742902371711551913246819251315650256325984569206718629062992028427256",
+		"makerTokenAmount": "4180747000000",
+		"takerTokenAmount": "3480475000000000",
+		"makerFee": "0",
+		"takerFee": "0",
+		"expirationUnixTimestampSec": 1535963543,
+		"takerTokenAmountFilled": "3480475000000000",
+		"takerTokenAmountCancelled": "0",
+		"status": "filled",
+		"makerTokenRemaining": "0",
+		"takerTokenRemaining": "0",
+		"makerLockedAmount": "0",
+		"takerLockedAmount": "0",
+		"price": 0.0012,
+		"pair": "ZRX-WETH",
+		"side": "buy",
+		"orderHash": "c30eb1c828671b7ba3a454a765c9eeabecd61b58f9e2280a24d4a5f0bf3c8eaa",
+		"createdTime": "2018-09-02T16:32:28.871066+08:00",
+		"updatedTime": "2018-09-02T16:32:31.883558+08:00"
+	},
+    ...
+]
+```
+
+### GET /v0/openOrders
+
+Retrieves a list of orders given query parameters. This endpoint should be paginated. For querying an entire orderbook snapshot, the [orderbook endpoint](#get-v0orderbook) is recommended.
+
+#### Parameters
+
+* pair [string]: returns orders created for this exchange address
+* tokenAddress [string]: returns orders where makerTokenAddress or takerTokenAddress is token address
+* makerTokenAddress [string]: returns orders with specified makerTokenAddress
+
+Returns HTTP 400 if no pair was found.
+
+#### Response
+
+```
+[
+	{
+		"id": 452,
+		"maker": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
+		"taker": "0x0000000000000000000000000000000000000000",
+		"makerTokenAddress": "0xc778417e063141139fce010982780140aa0cd5ab",
+		"takerTokenAddress": "0xa8e9fa8f91e5ae138c74648c9c304f1c75003a8d",
+		"feeRecipient": "0x1bbfd4009dde73595b6ff4abac9dd1494438aaae",
+		"exchangeContractAddress": "0x479cc461fecd078f766ecc58533d6f69580cf3ac",
+		"salt": "64714771787346576693970527227544016460454079355363503584618354068699042527224",
+		"makerTokenAmount": "5729184000000",
+		"takerTokenAmount": "13921902000000000",
+		"makerFee": "0",
+		"takerFee": "0",
+		"expirationUnixTimestampSec": 1535963954,
+		"takerTokenAmountFilled": "0",
+		"takerTokenAmountCancelled": "0",
+		"status": "activity",
+		"makerTokenRemaining": "5729184000000",
+		"takerTokenRemaining": "13921902000000000",
+		"makerLockedAmount": "0",
+		"takerLockedAmount": "0",
+		"price": 0.000411112,
+		"pair": "ZRX-WETH",
+		"side": "buy",
+		"orderHash": "e441cc9e0f567d2521d6dfa1d3f12faac65ab26cebce3c5449e4cce5fa33e4b3",
+		"createdTime": "2018-09-02T16:39:17.285983+08:00",
+		"updatedTime": "2018-09-02T16:39:17.285984+08:00",
+		"txId": "",
+		"txAmount": ""
+	},
+    ...
+]
+```
 
 ### POST /v0/order
 
@@ -274,3 +376,17 @@ Validation error codes:
 1005 - Invalid ECDSA or Hash
 1006 - Unsupported option
 ```
+### DELETE /v0/orders/:orderHash
+
+Delete an order by orderHash.
+
+#### Parameters
+
+* orderHash [string]: The hash result of order you wish to cancel.
+
+###### Success Response
+
+Returns HTTP 200 upon success.
+
+###### Error Response
+
