@@ -36,7 +36,7 @@ Unless the spec defines otherwise, errors to bad requests should respond with HT
 - All requests and responses should be of **application/json** content type
 - All addresses are sent as lower-case (non-checksummed) Ethereum addresses with the `0x` prefix.
 
-## Public REST API
+## Public Rest API
 
 ### GET /v0/markets
 
@@ -154,13 +154,13 @@ Retrieves the orderbook for a given token pair.
 
 Bids will be sorted in descending order by price, and asks will be sorted in ascending order by price. Within the price sorted orders, the orders are further sorted first by total fees, then by expiration in ascending order.
 
-## Private REST API
+## Private Rest API
 
 ###  POST /v0/auth
 
 Before you can get your own open order list or cancel an order, you need to get authentication token.
 
-#### Use web3.js
+#### Using web3.js
 ```
 async sign(address, data) {
 	const hash = this.web3.sha3(data);
